@@ -8,6 +8,9 @@
 #include "stdio.h"
 #include "linux/types.h"
 
+#include "timing.h"
+#include "hammer.h"
+
 //page select
 #define PAGE_SIZE 0x1000
 #define PAGE_MASK 0xfff
@@ -65,7 +68,7 @@ static VALUE acquire(VALUE self)
     
     rb_iv_set(self, "@v", ULL2NUM((uint64_t)v));
     rb_iv_set(self, "@p", ULL2NUM(p));
-    return ULL2NUM((uint64_t)v);
+    return self;
 }
 
 static VALUE release(VALUE self)
@@ -77,15 +80,64 @@ static VALUE release(VALUE self)
     return self;
 }
 
-void Init_HammerUtils()
+// fill page with 0xff
+static VALUE fill(VALUE self)
 {
-    module = rb_define_module("HammerUtils");   // module HammerUtils
-    page_class = rb_define_class_under(module, "Page", rb_cObject);     // class Page
-    rb_define_attr(page_class, "v", 1, 0);  // attr_reader :v
-    rb_define_attr(page_class, "p", 1, 0);  // attr_reader :p
-    rb_define_method(page_class, "initialize", initialize, 0);
-    rb_define_method(page_class, "acquire", acquire, 0);
-    rb_define_method(page_class, "release", release, 0);
+    void *v = (void *)NUM2ULL(rb_iv_get(self, "@v"));
+    memset(v, 0xff, ALLOC_SIZE);
+    return self;
 }
 
+// check hammer faults, returns offset
+static VALUE check(VALUE self)
+{
+    uint8_t *v = (uint8_t *)NUM2ULL(rb_iv_get(self, "@v"));
+    int i;
+    for (i=0; i<ALLOC_SIZE; ++i)
+        if (v[i] != 0xff) return INT2FIX(i);
+    return INT2FIX(-1);
+}
+
+// get v[i]
+static VALUE get(VALUE self, VALUE off)
+{
+    uint8_t *v = (uint8_t *)NUM2ULL(rb_iv_get(self, "@v"));
+    int i = FIX2INT(off);
+    return INT2FIX(v[i]);
+}
+
+static VALUE rb_hammer(VALUE self, VALUE a, VALUE b, VALUE n)
+{
+    void *va = (void *)NUM2ULL(a), *vb = (void *)NUM2ULL(b);
+    int ntimes = FIX2INT(n);
+    return ULL2NUM(hammer_loop(va, vb, ntimes));
+}
+
+static VALUE rb_access_time(VALUE self, VALUE a, VALUE b)
+{
+    void *va = (void *)NUM2ULL(a), *vb = (void *)NUM2ULL(b);
+    int access_time = 999, n=6, t;
+    while (n--)
+    {
+        t = hammer_loop(va, vb, 100) / (100*2);
+        if (t<access_time) access_time = t;
+    }
+    return INT2FIX(access_time);
+}
+
+void Init_RHUtils()
+{
+    module = rb_define_module("RHUtils");   // module HammerUtils
+    page_class = rb_define_class_under(module, "Page", rb_cObject);     // class Page
+        rb_define_attr(page_class, "v", 1, 0);  // attr_reader :v
+        rb_define_attr(page_class, "p", 1, 0);  // attr_reader :p
+        rb_define_method(page_class, "initialize", initialize, 0);
+        rb_define_method(page_class, "acquire", acquire, 0);
+        rb_define_method(page_class, "release", release, 0);
+        rb_define_method(page_class, "check", check, 0);
+        rb_define_method(page_class, "fill", fill, 0);
+        rb_define_method(page_class, "get", get, 1);
+    rb_define_module_function(module, "hammer", rb_hammer, 3);
+    rb_define_module_function(module, "access_time", rb_access_time, 2);
+}
 
