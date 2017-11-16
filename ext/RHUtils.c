@@ -35,7 +35,7 @@ uint64_t v2p(void *v) {
     uint64_t page_offset = (uint64_t)v % PAGE_SIZE;       // 页内偏移
     uint64_t pfn_item_offset = vir_page_idx*sizeof(uint64_t);   // pagemap文件中对应虚拟页号的偏移
     
-    int dummy = *(int *)v;  // visit the addr, keep it in memory
+//    int dummy = *(int *)v;  // visit the addr, keep it in memory
     // 读取pfn
     uint64_t pfn_item, pfn;
     ASSERT( lseek(fd_pagemap, pfn_item_offset, SEEK_SET) != -1 );
@@ -74,7 +74,7 @@ static VALUE acquire(VALUE self)
 static VALUE release(VALUE self)
 {
     void *v = (void *)NUM2ULL(rb_iv_get(self, "@v"));
-    munmap(v, ALLOC_SIZE);
+    if (v) munmap(v, ALLOC_SIZE);
     rb_iv_set(self, "@v", INT2FIX(0));  //actually int 1
     rb_iv_set(self, "@p", INT2FIX(0));
     return self;
@@ -106,6 +106,15 @@ static VALUE get(VALUE self, VALUE off)
     return INT2FIX(v[i]);
 }
 
+// set byte v[i]
+static VALUE set(VALUE self, VALUE off, VALUE x)
+{
+    uint8_t *v = (uint8_t *)NUM2ULL(rb_iv_get(self, "@v"));
+    int i = FIX2INT(off);
+    v[i] = (uint8_t)FIX2INT(x);
+    return self;
+}
+
 static VALUE rb_hammer(VALUE self, VALUE a, VALUE b, VALUE n)
 {
     void *va = (void *)NUM2ULL(a), *vb = (void *)NUM2ULL(b);
@@ -125,6 +134,18 @@ static VALUE rb_access_time(VALUE self, VALUE a, VALUE b)
     return INT2FIX(access_time);
 }
 
+// get lowest 1-bit, e.g. ffs(10101000b) = 4
+static VALUE bit_ffs(VALUE self, VALUE x)
+{
+    return INT2FIX(__builtin_ffsll(NUM2ULL(x)));
+}
+
+// get number of 0-s before highest 1-bit, e.g. clz(10101000b) = (32-8) = 24
+static VALUE bit_clz(VALUE self, VALUE x)
+{
+    return INT2FIX(__builtin_clzll(NUM2ULL(x)));
+}
+
 void Init_RHUtils()
 {
     module = rb_define_module("RHUtils");   // module HammerUtils
@@ -137,7 +158,10 @@ void Init_RHUtils()
         rb_define_method(page_class, "check", check, 0);
         rb_define_method(page_class, "fill", fill, 0);
         rb_define_method(page_class, "get", get, 1);
+        rb_define_method(page_class, "set", set, 2);
     rb_define_module_function(module, "hammer", rb_hammer, 3);
     rb_define_module_function(module, "access_time", rb_access_time, 2);
+    rb_define_module_function(module, "bit_ffs", bit_ffs, 1);
+    rb_define_module_function(module, "bit_clz", bit_clz, 1);
 }
 
