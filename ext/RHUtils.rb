@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 # ruby wrapping of RHUtils C module
 require "./RHUtils.so"
+require "./dram"
 
 module RHUtils
     
@@ -30,14 +31,15 @@ module RHUtils
         access_time(a, b) > @threshold
     end
     
-    def allocate_mb(mb)
-        ret = Array.new(256*mb) {Page.new} # 256 pages/MB
+    def allocate_mb(mb, cls=Page)
+        ret = Array.new(256*mb) {cls.new} # 256 pages/MB
         ret.each &:acquire
         ret.sort!
         ret
     end
     
-    def find_contiguous_aligned_range(arr)
+    # gcap routine
+    def get_contiguous_aligned_page(arr)
         chunk_length = []
         max_len = max_idx = 0
         arr.each_index {|i|
@@ -67,4 +69,37 @@ module RHUtils
         
         return ret_start...(ret_start + (1 << ret_order))
     end
+    
+    # allocate_mb + gcap. free unused pages. return available slice
+    def allocate_cap(mb, cls=Page)
+        puts "acquiring memory..."
+        pages = allocate_mb(mb, cls)
+        puts "acquired #{pages.size} pages #{mb} MB"
+        
+        range = get_contiguous_aligned_page(pages)
+        puts "CAP is %d pages %d MB, address %x -> %x" % 
+            [range.size, range.size/256, pages[range.begin].p, pages[range.end].p-1]
+        
+        (pages - pages[range]).tap{|unused|
+            unused.each &:release
+            puts "#{unused.size} unused pages released"
+        }
+        return pages[range]        
+    end
+    
+    # in given pages collection, find corresponding vaddr
+    def p2v(pages, p)
+        offset = p % PAGE_SIZE
+        base = p - offset
+        pg = pages.find {|x| x.p == base}
+        return pg ? pg.v+offset : nil
+    end
+    
+    # flip args bits in x
+    def bit_flip(x, *args)
+        mask = args.reduce(0) {|ret, arg| ret | (1 << arg)}
+        return x ^ mask
+    end
 end
+
+# todo: unit test
