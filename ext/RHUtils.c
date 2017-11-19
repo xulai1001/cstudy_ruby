@@ -7,6 +7,8 @@
 #include "time.h"
 #include "stdio.h"
 #include "linux/types.h"
+#include "sys/stat.h"
+#include "sys/sysinfo.h"
 
 #include "timing.h"
 #include "hammer.h"
@@ -146,6 +148,13 @@ static VALUE bit_clz(VALUE self, VALUE x)
     return INT2FIX(__builtin_clzll(NUM2ULL(x)));
 }
 
+static VALUE rb_mem_size(VALUE self)
+{
+    struct sysinfo info;
+    sysinfo(&info);
+    return ULL2NUM((size_t)info.totalram * (size_t)info.mem_unit);
+}
+
 void Init_RHUtils()
 {
     module = rb_define_module("RHUtils");   // module HammerUtils
@@ -163,5 +172,6 @@ void Init_RHUtils()
     rb_define_module_function(module, "access_time", rb_access_time, 2);
     rb_define_module_function(module, "bit_ffs", bit_ffs, 1);
     rb_define_module_function(module, "bit_clz", bit_clz, 1);
+    rb_define_module_function(module, "physmem_size", rb_mem_size, 0);
 }
 

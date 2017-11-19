@@ -1,7 +1,8 @@
 # -*- encoding: utf-8 -*-
 # ruby wrapping of RHUtils C module
-require "./RHUtils.so"
-require "./dram"
+$: << "."
+require "RHUtils.so"
+require "dram"
 
 module RHUtils
     
@@ -9,7 +10,7 @@ module RHUtils
     PAGE_SHIFT = 12
     
     # row conflict threshold (ticks)
-    @threshold = 250
+    @@threshold = 250
     
     class Page
         def [](offset)
@@ -28,7 +29,7 @@ module RHUtils
     module_function
     
     def conflict?(a, b)
-        access_time(a, b) > @threshold
+        access_time(a, b) > @@threshold
     end
     
     def allocate_mb(mb, cls=Page)
@@ -92,7 +93,13 @@ module RHUtils
         offset = p % PAGE_SIZE
         base = p - offset
         pg = pages.find {|x| x.p == base}
-        return pg ? pg.v+offset : nil
+        # debug
+        if !pg
+            puts "offset=#{"%x" % offset} base=#{"%x" % base} pages=#{pages.map{|pg| "%x" % pg.p}}"
+            return nil
+        else
+            return pg.v+offset
+        end
     end
     
     # flip args bits in x
