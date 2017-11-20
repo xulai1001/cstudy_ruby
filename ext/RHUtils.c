@@ -127,8 +127,8 @@ static VALUE rb_hammer(VALUE self, VALUE a, VALUE b, VALUE n)
 static VALUE rb_access_time(VALUE self, VALUE a, VALUE b)
 {
     void *va = (void *)NUM2ULL(a), *vb = (void *)NUM2ULL(b);
-    int access_time = 999, n=6, t;
-    while (n--)
+    int access_time = 999, t;
+    while (access_time > 400)
     {
         t = hammer_loop(va, vb, 100) / (100*2);
         if (t<access_time) access_time = t;
