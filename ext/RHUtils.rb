@@ -24,6 +24,10 @@ module RHUtils
         def <=>(pg)
             self.p <=> pg.p
         end
+        
+        def inspect
+            "#<Page p=0x%x v=0x%x>" % [@p, @v]
+        end
     end
     
     module_function

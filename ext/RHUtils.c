@@ -90,14 +90,15 @@ static VALUE fill(VALUE self)
     return self;
 }
 
-// check hammer faults, returns offset
+// check hammer faults, returns **all offsets**
 static VALUE check(VALUE self)
 {
     uint8_t *v = (uint8_t *)NUM2ULL(rb_iv_get(self, "@v"));
     int i;
+    VALUE ret = rb_ary_new();
     for (i=0; i<ALLOC_SIZE; ++i)
-        if (v[i] != 0xff) return INT2FIX(i);
-    return INT2FIX(-1);
+        if (v[i] != 0xff) rb_ary_push(ret, INT2FIX(i));
+    return ret;
 }
 
 // get v[i]
