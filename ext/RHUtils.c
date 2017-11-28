@@ -156,6 +156,11 @@ static VALUE rb_mem_size(VALUE self)
     return ULL2NUM((size_t)info.totalram * (size_t)info.mem_unit);
 }
 
+static VALUE rb_get_cpu_freq(VALUE self)
+{
+    return ULL2NUM(tsc_measure_freq());
+}
+
 void Init_RHUtils()
 {
     module = rb_define_module("RHUtils");   // module HammerUtils
@@ -174,5 +179,6 @@ void Init_RHUtils()
     rb_define_module_function(module, "bit_ffs", bit_ffs, 1);
     rb_define_module_function(module, "bit_clz", bit_clz, 1);
     rb_define_module_function(module, "physmem_size", rb_mem_size, 0);
+    rb_define_module_function(module, "get_cpu_freq", rb_get_cpu_freq, 0);
 }
 

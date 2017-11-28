@@ -111,6 +111,16 @@ module RHUtils
         mask = args.reduce(0) {|ret, arg| ret | (1 << arg)}
         return x ^ mask
     end
+    
+    # timing utils
+    def cpu_freq
+        @@cpu_freq ||= get_cpu_freq
+        @@cpu_freq
+    end
+    
+    def ticks_to_ns(tk)
+        (tk * 1000000000 / cpu_freq.to_f).to_i
+    end
 end
 
 # todo: unit test

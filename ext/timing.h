@@ -2,7 +2,7 @@
 #define _TIMING_H
 
 #include "time.h"
-#include "stdio.h"
+//#include "stdio.h"
 #include "unistd.h"
 #include "linux/types.h"
 #include "stdint.h"
@@ -106,11 +106,11 @@ clk_t tsc_overhead(void)
 clk_t tsc_measure_freq(void)
 {
     struct myclock cl;
-    printf("tsc_measure_freq...");
+//    printf("tsc_measure_freq...");
     START_TSC(cl);
     usleep(1000000);
     END_TSC(cl);
-    printf("%ld MHz(Mticks/sec)\n", cl.ticks / 1000000);
+//    printf("%ld MHz(Mticks/sec)\n", cl.ticks / 1000000);
     return cl.ticks;
 }
 

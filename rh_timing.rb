@@ -15,22 +15,44 @@ end
 
 include RHUtils
 
-class HammerInfo < Struct.new("HammerInfo", :p, :page, :value, :n, :ticks, :pairs)
+class HammerResult < Struct.new("HammerInfo", :p, :page, :value, :n, :ticks, :pairs)
     def inspect
-        "#<HammerInfo p=0x%x value=%x n=#{self.n} ticks=#{self.ticks}>" % [self.p, self.value]
+        "#<HammerResult p=0x%x value=%x n=#{self.n} ticks=#{self.ticks} pairs=#{pairs}>" % [self.p, self.value]
     end
+    
+    def offset; self.p - self.page.p; end
+    def ns; RHUtils.ticks_to_ns(self.ticks); end
+    
+    def explain
+        addr = "pa 0x%x+%x value %x" % [self.page.p, self.offset, self.value]
+        timing = "hammer %d times %d ms (avg %d ns)" % [self.n, self.ns/1000000, self.ns/self.n]
+        pair = self.pairs.map {|x| "%x-%x" % [x[0].p, x[1].p]}.join(" ")
+        return [addr, timing, pair].join(", ")        
+    end 
 end
 
 $pages_per_row = 32
 $result = {}
 $ntime_max = 1024000
 
-def update_result(r, ntime, ticks, pair)
+# test row [r] by hammering [ppage, qpage] (on row (r-1, r+1) and with row conflict)
+# and update result hash
+def hammer_row(r, ppage, qpage, ntime)
     flag = false
+    $result[r] ||= {}
+        
+    # fill row with 0xff (c-routine)
+    $pages[r].each &:fill       
+    
+    # hammer virt addrs (c-routine)
+    ticks = hammer(ppage.v, qpage.v, ntime)
+
+    # parse result
     $pages[r].each {|pg|
+        # with each bug offset i, update result hash
         pg.check.each {|i|
             pa = pg.p+i
-            info = $result[r][pa] || HammerInfo.new(
+            info = $result[r][pa] || HammerResult.new(
                 p = pa,
                 page = pg,
                 value = pg[i],
@@ -38,8 +60,8 @@ def update_result(r, ntime, ticks, pair)
                 ticks = ticks,
                 pairs = []
             )                           
-            info.pairs << pair; info.pairs.uniq!  # hammer page object
-            if ntime < info.n
+            info.pairs << [ppage, qpage]; info.pairs.uniq!  # hammer page object
+            if ntime <= info.n
                 info.n, info.ticks = ntime, ticks
                 flag = true
             end
@@ -49,35 +71,30 @@ def update_result(r, ntime, ticks, pair)
     return flag
 end
 
-# first scan row with max ntime
+# select hammer pages:
+# p: on row (r-1), every 8kB
+# q: on row (r+1), every 8kB, row conflict with p
+# hammer them with $ntime_max times to get initial result
 def test_row_first(r)
-    $result[r] ||= {}
-    ntime = $ntime_max
-    
-    # -- select first hammer addr: every 8kB
+    flag = false
     $pages[r-1].select{|p| (p.p >> PAGE_SHIFT).even? }.each {|p|
-        # -- select second hammer addr: every 8kB, only with row conflict
-        $pages[r+1].select {|q|
-            (q.p >> PAGE_SHIFT).even? and conflict?(p.v, q.v)
+        $pages[r+1].select {|q| (q.p >> PAGE_SHIFT).even? and conflict?(p.v, q.v)
         }.each {|q|
-            $pages[r].each &:fill       # fill row with 0xff (c-routine)
-            ticks = hammer(p.v, q.v, ntime) # hammer (c-routine) virt addrs
-            update_result(r, $ntime_max, ticks, [p, q])
-        }
+            flag |= hammer_row(r, p, q, $ntime_max)
+        }  
     }
+    return flag
 end
 
-# second shrink hammer time and test again
+# test smallest loop time to invoke bit flip
 def test_hammer_time(r)
     flag = true
     ntime = $ntime_max - 100000
     pair = $result[r].values[0].pairs[0] # just pick one pair ????
     
     while (ntime > 0 and flag)
-        puts ntime
-        $pages[r].each &:fill
-        ticks = hammer(pair[0].v, pair[1].v, ntime)
-        flag = update_result(r, ntime, ticks, pair)
+        # puts ntime
+        hammer_row(r, pair[0], pair[1], ntime)
         ntime -= 100000
     end
 end
@@ -100,11 +117,15 @@ test_rows = $pages.keys.select {|k| $pages.has_key?(k-1) and $pages.has_key?(k+1
 begin
 puts "- start testing"
 test_rows.each {|r|
-    puts "- Row ##{r}"
-    test_row_first(r)
-    test_hammer_time(r) if !$result[r].empty?
-    puts $result
-    puts "--------------------------------------"
+    puts "- Row #{r} -"
+    if test_row_first(r)
+        # if found bug, test min time to invoke it
+        test_hammer_time(r)
+        $result[r].each_value {|v|
+            puts v.explain
+            puts "-----------"
+        }
+    end
 }
 rescue Interrupt
 puts "", "Interrupt"
