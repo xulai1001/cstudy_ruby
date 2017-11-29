@@ -131,7 +131,7 @@ static VALUE rb_access_time(VALUE self, VALUE a, VALUE b)
     int access_time = 999, t;
     while (access_time > 400)
     {
-        t = hammer_loop(va, vb, 100, 0) / (100*2);
+        t = hammer_loop_fence(va, vb, 100, 0) / (100*2);
         if (t<access_time) access_time = t;
     }
     return INT2FIX(access_time);

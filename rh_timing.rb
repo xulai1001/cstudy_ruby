@@ -33,7 +33,6 @@ end
 
 $pages_per_row = 32
 $result = {}
-$ntime_max = 1024000
 
 # test row [r] by hammering [ppage, qpage] (on row (r-1, r+1) and with row conflict)
 # and update result hash
@@ -45,7 +44,7 @@ def hammer_row(r, ppage, qpage, ntime)
     $pages[r].each &:fill       
     
     # hammer virt addrs (c-routine)
-    ticks = hammer(ppage.v, qpage.v, ntime, 0)
+    ticks = hammer(ppage.v, qpage.v, ntime, $lat)
 
     # parse result
     $pages[r].each {|pg|
@@ -100,7 +99,11 @@ def test_hammer_time(r)
 end
 
 # -- 1. allocate memory
-mb = (ARGV[0] || 2048).to_i
+mb = 2048
+$lat = (ARGV[0] || 0).to_i
+$ntime_max = (ARGV[1] || 1024000).to_i
+$start_row = (ARGV[2] || 0).to_i
+
 puts "- allocate #{mb} MB memory..."
 $pages = allocate_mb(mb).group_by(&:row)
 
@@ -111,7 +114,7 @@ $pages.keys.select {|k| $pages[k].size < $pages_per_row}.each {|k|
     $pages.delete(k)
 }
 # -- 3. select test rows
-test_rows = $pages.keys.select {|k| $pages.has_key?(k-1) and $pages.has_key?(k+1)}
+test_rows = $pages.keys.select {|k| $pages.has_key?(k-1) and $pages.has_key?(k+1) and k>=$start_row}
 
 # -- 4. start testing
 begin

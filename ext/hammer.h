@@ -9,10 +9,20 @@
     "movq (%1), %%rax \n\t" \
     "clflush (%0) \n\t" \
     "clflush (%1) \n\t" \
+    :   \
+    :"r"(a), "r"(b) \
+    :"rax", "memory")
+
+#define HAMMER_fence(a, b) __asm__ __volatile__( \
+    "movq (%0), %%rax \n\t" \
+    "movq (%1), %%rax \n\t" \
+    "clflush (%0) \n\t" \
+    "clflush (%1) \n\t" \
     "mfence" \
     :   \
     :"r"(a), "r"(b) \
     :"rax", "memory")
+
 
 // row conflict (slow path) > 250 ticks
 #define ACCESS_TIME_THRESHOLD 250
@@ -27,6 +37,23 @@ uint64_t hammer_loop(void *va, void *vb, int n, int delay)
     while (i--) {
         j = delay;
         HAMMER(va, vb); 
+        while (j-- > 0);
+    }
+    END_TSC(clk);
+    
+    return clk.ticks;
+}
+
+// hammer function. returns operation time (ticks)
+uint64_t hammer_loop_fence(void *va, void *vb, int n, int delay)
+{
+    struct myclock clk;
+    register int i = n, j;
+    
+    START_TSC(clk);
+    while (i--) {
+        j = delay;
+        HAMMER_fence(va, vb); 
         while (j-- > 0);
     }
     END_TSC(clk);

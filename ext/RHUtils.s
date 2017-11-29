@@ -288,7 +288,7 @@ hammer_loop:
 	movl	%ecx, -120(%rbp)
 	movl	-116(%rbp), %r12d
 #APP
-# 26 "hammer.h" 1
+# 36 "hammer.h" 1
 	cpuid 
     rdtsc 
     shlq $32, %rdx 
@@ -302,12 +302,12 @@ hammer_loop:
 	movq	-104(%rbp), %rdx
 	movq	-112(%rbp), %rcx
 #APP
-# 29 "hammer.h" 1
+# 39 "hammer.h" 1
 	movq (%rdx), %rax 
 	movq (%rcx), %rax 
 	clflush (%rdx) 
 	clflush (%rcx) 
-	mfence
+	
 # 0 "" 2
 #NO_APP
 	nop
@@ -322,7 +322,7 @@ hammer_loop:
 	testl	%eax, %eax
 	jne	.L21
 #APP
-# 32 "hammer.h" 1
+# 42 "hammer.h" 1
 	rdtscp 
     shlq $32, %rdx 
     orq %rdx, %rax 
@@ -345,6 +345,83 @@ hammer_loop:
 	.cfi_endproc
 .LFE27:
 	.size	hammer_loop, .-hammer_loop
+	.globl	hammer_loop_fence
+	.type	hammer_loop_fence, @function
+hammer_loop_fence:
+.LFB28:
+	.cfi_startproc
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset 6, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register 6
+	pushq	%r12
+	pushq	%rbx
+	.cfi_offset 12, -24
+	.cfi_offset 3, -32
+	movq	%rdi, -104(%rbp)
+	movq	%rsi, -112(%rbp)
+	movl	%edx, -116(%rbp)
+	movl	%ecx, -120(%rbp)
+	movl	-116(%rbp), %r12d
+#APP
+# 53 "hammer.h" 1
+	cpuid 
+    rdtsc 
+    shlq $32, %rdx 
+    orq %rdx, %rax
+# 0 "" 2
+#NO_APP
+	movq	%rax, -40(%rbp)
+	jmp	.L24
+.L26:
+	movl	-120(%rbp), %ebx
+	movq	-104(%rbp), %rdx
+	movq	-112(%rbp), %rcx
+#APP
+# 56 "hammer.h" 1
+	movq (%rdx), %rax 
+	movq (%rcx), %rax 
+	clflush (%rdx) 
+	clflush (%rcx) 
+	mfence
+# 0 "" 2
+#NO_APP
+	nop
+.L25:
+	movl	%ebx, %eax
+	leal	-1(%rax), %ebx
+	testl	%eax, %eax
+	jg	.L25
+.L24:
+	movl	%r12d, %eax
+	leal	-1(%rax), %r12d
+	testl	%eax, %eax
+	jne	.L26
+#APP
+# 59 "hammer.h" 1
+	rdtscp 
+    shlq $32, %rdx 
+    orq %rdx, %rax 
+    movq %rax, %rsi 
+    cpuid
+# 0 "" 2
+#NO_APP
+	movq	%rsi, -32(%rbp)
+	movq	-32(%rbp), %rdx
+	movq	-40(%rbp), %rax
+	subq	%rax, %rdx
+	movq	%rdx, %rax
+	movq	%rax, -48(%rbp)
+	movq	-48(%rbp), %rax
+	popq	%rbx
+	popq	%r12
+	popq	%rbp
+	.cfi_def_cfa 7, 8
+	ret
+	.cfi_endproc
+.LFE28:
+	.size	hammer_loop_fence, .-hammer_loop_fence
 	.globl	fd_pagemap
 	.data
 	.align 4
@@ -368,7 +445,7 @@ fd_pagemap:
 	.globl	v2p
 	.type	v2p, @function
 v2p:
-.LFB28:
+.LFB29:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -379,7 +456,7 @@ v2p:
 	movq	%rdi, -56(%rbp)
 	movl	fd_pagemap(%rip), %eax
 	testl	%eax, %eax
-	jns	.L24
+	jns	.L29
 	movl	$0, %esi
 	movl	$.LC0, %edi
 	movl	$0, %eax
@@ -387,10 +464,10 @@ v2p:
 	movl	%eax, fd_pagemap(%rip)
 	movl	fd_pagemap(%rip), %eax
 	testl	%eax, %eax
-	jg	.L24
+	jg	.L29
 	movl	$.LC1, %edi
 	call	rb_sys_fail
-.L24:
+.L29:
 	movq	-56(%rbp), %rax
 	shrq	$12, %rax
 	movq	%rax, -8(%rbp)
@@ -407,10 +484,10 @@ v2p:
 	movl	%eax, %edi
 	call	lseek
 	cmpq	$-1, %rax
-	jne	.L25
+	jne	.L30
 	movl	$.LC2, %edi
 	call	rb_sys_fail
-.L25:
+.L30:
 	movl	fd_pagemap(%rip), %eax
 	leaq	-40(%rbp), %rcx
 	movl	$8, %edx
@@ -418,10 +495,10 @@ v2p:
 	movl	%eax, %edi
 	call	read
 	cmpq	$8, %rax
-	je	.L26
+	je	.L31
 	movl	$.LC3, %edi
 	call	rb_sys_fail
-.L26:
+.L31:
 	movq	-40(%rbp), %rdx
 	movabsq	$36028797018963967, %rax
 	andq	%rdx, %rax
@@ -435,7 +512,7 @@ v2p:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE28:
+.LFE29:
 	.size	v2p, .-v2p
 	.local	module
 	.comm	module,8,8
@@ -449,7 +526,7 @@ v2p:
 	.text
 	.type	initialize, @function
 initialize:
-.LFB29:
+.LFB30:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -473,7 +550,7 @@ initialize:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE29:
+.LFE30:
 	.size	initialize, .-initialize
 	.section	.rodata
 	.align 8
@@ -482,7 +559,7 @@ initialize:
 	.text
 	.type	acquire, @function
 acquire:
-.LFB30:
+.LFB31:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -500,10 +577,10 @@ acquire:
 	call	mmap
 	movq	%rax, -8(%rbp)
 	cmpq	$-1, -8(%rbp)
-	jne	.L31
+	jne	.L36
 	movl	$.LC6, %edi
 	call	rb_sys_fail
-.L31:
+.L36:
 	movq	-8(%rbp), %rax
 	movl	$4096, %edx
 	movl	$0, %esi
@@ -534,11 +611,11 @@ acquire:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE30:
+.LFE31:
 	.size	acquire, .-acquire
 	.type	release, @function
 release:
-.LFB31:
+.LFB32:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -555,12 +632,12 @@ release:
 	call	rb_num2ull
 	movq	%rax, -8(%rbp)
 	cmpq	$0, -8(%rbp)
-	je	.L34
+	je	.L39
 	movq	-8(%rbp), %rax
 	movl	$4096, %esi
 	movq	%rax, %rdi
 	call	munmap
-.L34:
+.L39:
 	movq	-24(%rbp), %rax
 	movl	$1, %edx
 	movl	$.LC4, %esi
@@ -576,11 +653,11 @@ release:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE31:
+.LFE32:
 	.size	release, .-release
 	.type	fill, @function
 fill:
-.LFB32:
+.LFB33:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -606,11 +683,11 @@ fill:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE32:
+.LFE33:
 	.size	fill, .-fill
 	.type	check, @function
 check:
-.LFB33:
+.LFB34:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -629,15 +706,15 @@ check:
 	call	rb_ary_new
 	movq	%rax, -24(%rbp)
 	movl	$0, -4(%rbp)
-	jmp	.L39
-.L41:
+	jmp	.L44
+.L46:
 	movl	-4(%rbp), %eax
 	movslq	%eax, %rdx
 	movq	-16(%rbp), %rax
 	addq	%rdx, %rax
 	movzbl	(%rax), %eax
 	cmpb	$-1, %al
-	je	.L40
+	je	.L45
 	movl	-4(%rbp), %eax
 	cltq
 	addq	%rax, %rax
@@ -647,21 +724,21 @@ check:
 	movq	%rdx, %rsi
 	movq	%rax, %rdi
 	call	rb_ary_push
-.L40:
+.L45:
 	addl	$1, -4(%rbp)
-.L39:
+.L44:
 	cmpl	$4095, -4(%rbp)
-	jle	.L41
+	jle	.L46
 	movq	-24(%rbp), %rax
 	leave
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE33:
+.LFE34:
 	.size	check, .-check
 	.type	get, @function
 get:
-.LFB34:
+.LFB35:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -694,11 +771,11 @@ get:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE34:
+.LFE35:
 	.size	get, .-get
 	.type	set, @function
 set:
-.LFB35:
+.LFB36:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -737,11 +814,11 @@ set:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE35:
+.LFE36:
 	.size	set, .-set
 	.type	rb_hammer, @function
 rb_hammer:
-.LFB36:
+.LFB37:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -782,11 +859,11 @@ rb_hammer:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE36:
+.LFE37:
 	.size	rb_hammer, .-rb_hammer
 	.type	rb_access_time, @function
 rb_access_time:
-.LFB37:
+.LFB38:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -806,14 +883,14 @@ rb_access_time:
 	call	rb_num2ull
 	movq	%rax, -24(%rbp)
 	movl	$999, -4(%rbp)
-	jmp	.L50
-.L51:
+	jmp	.L55
+.L56:
 	movq	-24(%rbp), %rsi
 	movq	-16(%rbp), %rax
 	movl	$0, %ecx
 	movl	$100, %edx
 	movq	%rax, %rdi
-	call	hammer_loop
+	call	hammer_loop_fence
 	shrq	$3, %rax
 	movabsq	$2951479051793528259, %rdx
 	mulq	%rdx
@@ -822,12 +899,12 @@ rb_access_time:
 	movl	%eax, -28(%rbp)
 	movl	-28(%rbp), %eax
 	cmpl	-4(%rbp), %eax
-	jge	.L50
+	jge	.L55
 	movl	-28(%rbp), %eax
 	movl	%eax, -4(%rbp)
-.L50:
+.L55:
 	cmpl	$400, -4(%rbp)
-	jg	.L51
+	jg	.L56
 	movl	-4(%rbp), %eax
 	cltq
 	addq	%rax, %rax
@@ -836,11 +913,11 @@ rb_access_time:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE37:
+.LFE38:
 	.size	rb_access_time, .-rb_access_time
 	.type	bit_ffs, @function
 bit_ffs:
-.LFB38:
+.LFB39:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -864,11 +941,11 @@ bit_ffs:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE38:
+.LFE39:
 	.size	bit_ffs, .-bit_ffs
 	.type	bit_clz, @function
 bit_clz:
-.LFB39:
+.LFB40:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -890,11 +967,11 @@ bit_clz:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE39:
+.LFE40:
 	.size	bit_clz, .-bit_clz
 	.type	rb_mem_size, @function
 rb_mem_size:
-.LFB40:
+.LFB41:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -916,11 +993,11 @@ rb_mem_size:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE40:
+.LFE41:
 	.size	rb_mem_size, .-rb_mem_size
 	.type	rb_get_cpu_freq, @function
 rb_get_cpu_freq:
-.LFB41:
+.LFB42:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -936,7 +1013,7 @@ rb_get_cpu_freq:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE41:
+.LFE42:
 	.size	rb_get_cpu_freq, .-rb_get_cpu_freq
 	.section	.rodata
 .LC7:
@@ -977,7 +1054,7 @@ rb_get_cpu_freq:
 	.globl	Init_RHUtils
 	.type	Init_RHUtils, @function
 Init_RHUtils:
-.LFB42:
+.LFB43:
 	.cfi_startproc
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
@@ -1088,7 +1165,7 @@ Init_RHUtils:
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
-.LFE42:
+.LFE43:
 	.size	Init_RHUtils, .-Init_RHUtils
 	.ident	"GCC: (GNU) 5.1.1 20150618 (Red Hat 5.1.1-4)"
 	.section	.note.GNU-stack,"",@progbits
