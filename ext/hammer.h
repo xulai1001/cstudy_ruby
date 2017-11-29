@@ -18,13 +18,17 @@
 #define ACCESS_TIME_THRESHOLD 250
 
 // hammer function. returns operation time (ticks)
-uint64_t hammer_loop(void *va, void *vb, int n)
+uint64_t hammer_loop(void *va, void *vb, int n, int delay)
 {
     struct myclock clk;
-    int i = n;
+    register int i = n, j;
     
     START_TSC(clk);
-    while (i--) { HAMMER(va, vb); }
+    while (i--) {
+        j = delay;
+        HAMMER(va, vb); 
+        while (j-- > 0);
+    }
     END_TSC(clk);
     
     return clk.ticks;

@@ -45,7 +45,7 @@ def hammer_row(r, ppage, qpage, ntime)
     $pages[r].each &:fill       
     
     # hammer virt addrs (c-routine)
-    ticks = hammer(ppage.v, qpage.v, ntime)
+    ticks = hammer(ppage.v, qpage.v, ntime, 0)
 
     # parse result
     $pages[r].each {|pg|

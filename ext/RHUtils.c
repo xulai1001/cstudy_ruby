@@ -118,11 +118,11 @@ static VALUE set(VALUE self, VALUE off, VALUE x)
     return self;
 }
 
-static VALUE rb_hammer(VALUE self, VALUE a, VALUE b, VALUE n)
+static VALUE rb_hammer(VALUE self, VALUE a, VALUE b, VALUE n, VALUE d)
 {
     void *va = (void *)NUM2ULL(a), *vb = (void *)NUM2ULL(b);
-    int ntimes = FIX2INT(n);
-    return ULL2NUM(hammer_loop(va, vb, ntimes));
+    int ntimes = FIX2INT(n), delay = FIX2INT(d);
+    return ULL2NUM(hammer_loop(va, vb, ntimes, delay));
 }
 
 static VALUE rb_access_time(VALUE self, VALUE a, VALUE b)
@@ -131,7 +131,7 @@ static VALUE rb_access_time(VALUE self, VALUE a, VALUE b)
     int access_time = 999, t;
     while (access_time > 400)
     {
-        t = hammer_loop(va, vb, 100) / (100*2);
+        t = hammer_loop(va, vb, 100, 0) / (100*2);
         if (t<access_time) access_time = t;
     }
     return INT2FIX(access_time);
@@ -174,7 +174,7 @@ void Init_RHUtils()
         rb_define_method(page_class, "fill", fill, 0);
         rb_define_method(page_class, "get", get, 1);
         rb_define_method(page_class, "set", set, 2);
-    rb_define_module_function(module, "hammer", rb_hammer, 3);
+    rb_define_module_function(module, "c_hammer", rb_hammer, 4);
     rb_define_module_function(module, "access_time", rb_access_time, 2);
     rb_define_module_function(module, "bit_ffs", bit_ffs, 1);
     rb_define_module_function(module, "bit_clz", bit_clz, 1);

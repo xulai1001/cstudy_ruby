@@ -32,6 +32,11 @@ module RHUtils
     
     module_function
     
+    # wrapper
+    def hammer(a, b, ntime, delay=0)
+        c_hammer(a, b, ntime, delay)
+    end
+    
     def conflict?(a, b)
         access_time(a, b) > @@threshold
     end
