@@ -28,11 +28,19 @@ module RHUtils
         def inspect
             "#<Page p=0x%x v=0x%x>" % [@p, @v]
         end
+    
+        # default arg wrappers
+        def fill(value=0xff)
+            c_fill(value)
+        end
+        
+        def check(value=0xff)
+            c_check(value)
+        end
     end
     
     module_function
     
-    # wrapper
     def hammer(a, b, ntime, delay=0)
         c_hammer(a, b, ntime, delay)
     end

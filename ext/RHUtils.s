@@ -655,8 +655,8 @@ release:
 	.cfi_endproc
 .LFE32:
 	.size	release, .-release
-	.type	fill, @function
-fill:
+	.type	fill_impl, @function
+fill_impl:
 .LFB33:
 	.cfi_startproc
 	pushq	%rbp
@@ -666,6 +666,7 @@ fill:
 	.cfi_def_cfa_register 6
 	subq	$32, %rsp
 	movq	%rdi, -24(%rbp)
+	movq	%rsi, -32(%rbp)
 	movq	-24(%rbp), %rax
 	movl	$.LC4, %esi
 	movq	%rax, %rdi
@@ -673,9 +674,14 @@ fill:
 	movq	%rax, %rdi
 	call	rb_num2ull
 	movq	%rax, -8(%rbp)
+	movq	-32(%rbp), %rax
+	movq	%rax, %rdi
+	call	rb_fix2int
+	movb	%al, -9(%rbp)
+	movzbl	-9(%rbp), %ecx
 	movq	-8(%rbp), %rax
 	movl	$4096, %edx
-	movl	$255, %esi
+	movl	%ecx, %esi
 	movq	%rax, %rdi
 	call	memset
 	movq	-24(%rbp), %rax
@@ -684,9 +690,9 @@ fill:
 	ret
 	.cfi_endproc
 .LFE33:
-	.size	fill, .-fill
-	.type	check, @function
-check:
+	.size	fill_impl, .-fill_impl
+	.type	check_impl, @function
+check_impl:
 .LFB34:
 	.cfi_startproc
 	pushq	%rbp
@@ -696,6 +702,7 @@ check:
 	.cfi_def_cfa_register 6
 	subq	$48, %rsp
 	movq	%rdi, -40(%rbp)
+	movq	%rsi, -48(%rbp)
 	movq	-40(%rbp), %rax
 	movl	$.LC4, %esi
 	movq	%rax, %rdi
@@ -703,8 +710,12 @@ check:
 	movq	%rax, %rdi
 	call	rb_num2ull
 	movq	%rax, -16(%rbp)
+	movq	-48(%rbp), %rax
+	movq	%rax, %rdi
+	call	rb_fix2int
+	movb	%al, -17(%rbp)
 	call	rb_ary_new
-	movq	%rax, -24(%rbp)
+	movq	%rax, -32(%rbp)
 	movl	$0, -4(%rbp)
 	jmp	.L44
 .L46:
@@ -713,14 +724,14 @@ check:
 	movq	-16(%rbp), %rax
 	addq	%rdx, %rax
 	movzbl	(%rax), %eax
-	cmpb	$-1, %al
+	cmpb	-17(%rbp), %al
 	je	.L45
 	movl	-4(%rbp), %eax
 	cltq
 	addq	%rax, %rax
 	orq	$1, %rax
 	movq	%rax, %rdx
-	movq	-24(%rbp), %rax
+	movq	-32(%rbp), %rax
 	movq	%rdx, %rsi
 	movq	%rax, %rdi
 	call	rb_ary_push
@@ -729,13 +740,13 @@ check:
 .L44:
 	cmpl	$4095, -4(%rbp)
 	jle	.L46
-	movq	-24(%rbp), %rax
+	movq	-32(%rbp), %rax
 	leave
 	.cfi_def_cfa 7, 8
 	ret
 	.cfi_endproc
 .LFE34:
-	.size	check, .-check
+	.size	check_impl, .-check_impl
 	.type	get, @function
 get:
 .LFB35:
@@ -1031,9 +1042,9 @@ rb_get_cpu_freq:
 .LC13:
 	.string	"release"
 .LC14:
-	.string	"check"
+	.string	"c_check"
 .LC15:
-	.string	"fill"
+	.string	"c_fill"
 .LC16:
 	.string	"get"
 .LC17:
@@ -1101,14 +1112,14 @@ Init_RHUtils:
 	movq	%rax, %rdi
 	call	rb_define_method
 	movq	page_class(%rip), %rax
-	movl	$0, %ecx
-	movl	$check, %edx
+	movl	$1, %ecx
+	movl	$check_impl, %edx
 	movl	$.LC14, %esi
 	movq	%rax, %rdi
 	call	rb_define_method
 	movq	page_class(%rip), %rax
-	movl	$0, %ecx
-	movl	$fill, %edx
+	movl	$1, %ecx
+	movl	$fill_impl, %edx
 	movl	$.LC15, %esi
 	movq	%rax, %rdi
 	call	rb_define_method

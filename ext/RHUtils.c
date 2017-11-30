@@ -83,21 +83,23 @@ static VALUE release(VALUE self)
 }
 
 // fill page with 0xff
-static VALUE fill(VALUE self)
+static VALUE fill_impl(VALUE self, VALUE x)
 {
     void *v = (void *)NUM2ULL(rb_iv_get(self, "@v"));
-    memset(v, 0xff, ALLOC_SIZE);
+    uint8_t value = (uint8_t)FIX2INT(x);
+    memset(v, value, ALLOC_SIZE);
     return self;
 }
 
 // check hammer faults, returns **all offsets**
-static VALUE check(VALUE self)
+static VALUE check_impl(VALUE self, VALUE x)
 {
     uint8_t *v = (uint8_t *)NUM2ULL(rb_iv_get(self, "@v"));
+    uint8_t value = (uint8_t)FIX2INT(x);
     int i;
     VALUE ret = rb_ary_new();
     for (i=0; i<ALLOC_SIZE; ++i)
-        if (v[i] != 0xff) rb_ary_push(ret, INT2FIX(i));
+        if (v[i] != value) rb_ary_push(ret, INT2FIX(i));
     return ret;
 }
 
@@ -170,8 +172,8 @@ void Init_RHUtils()
         rb_define_method(page_class, "initialize", initialize, 0);
         rb_define_method(page_class, "acquire", acquire, 0);
         rb_define_method(page_class, "release", release, 0);
-        rb_define_method(page_class, "check", check, 0);
-        rb_define_method(page_class, "fill", fill, 0);
+        rb_define_method(page_class, "c_check", check_impl, 1);
+        rb_define_method(page_class, "c_fill", fill_impl, 1);
         rb_define_method(page_class, "get", get, 1);
         rb_define_method(page_class, "set", set, 2);
     rb_define_module_function(module, "c_hammer", rb_hammer, 4);

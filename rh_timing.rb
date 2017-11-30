@@ -41,7 +41,9 @@ def hammer_row(r, ppage, qpage, ntime)
     $result[r] ||= {}
         
     # fill row with 0xff (c-routine)
-    $pages[r].each &:fill       
+    $pages[r-1].each {|pg| pg.fill(0x55)}
+    $pages[r].each {|pg| pg.fill(0xaa)}
+    $pages[r+1].each {|pg| pg.fill(0x55)}
     
     # hammer virt addrs (c-routine)
     ticks = hammer(ppage.v, qpage.v, ntime, $lat)
@@ -49,7 +51,7 @@ def hammer_row(r, ppage, qpage, ntime)
     # parse result
     $pages[r].each {|pg|
         # with each bug offset i, update result hash
-        pg.check.each {|i|
+        pg.check(0xaa).each {|i|
             pa = pg.p+i
             info = $result[r][pa] || HammerResult.new(
                 p = pa,
