@@ -899,6 +899,17 @@ rb_access_time:
 	movq	-24(%rbp), %rsi
 	movq	-16(%rbp), %rax
 	movl	$0, %ecx
+	movl	$20, %edx
+	movq	%rax, %rdi
+	call	hammer_loop_fence
+	movabsq	$-3689348814741910323, %rdx
+	mulq	%rdx
+	movq	%rdx, %rax
+	shrq	$5, %rax
+	movl	%eax, -28(%rbp)
+	movq	-24(%rbp), %rsi
+	movq	-16(%rbp), %rax
+	movl	$0, %ecx
 	movl	$100, %edx
 	movq	%rax, %rdi
 	call	hammer_loop_fence

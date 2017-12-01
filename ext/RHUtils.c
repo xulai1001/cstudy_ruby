@@ -131,9 +131,11 @@ static VALUE rb_access_time(VALUE self, VALUE a, VALUE b)
 {
     void *va = (void *)NUM2ULL(a), *vb = (void *)NUM2ULL(b);
     int access_time = 999, t;
+
     while (access_time > 400)
     {
-        t = hammer_loop_fence(va, vb, 100, 0) / (100*2);
+        t = hammer_loop_fence(va, vb, 20, 0) / (20*2);    // warmup
+        t = hammer_loop_fence(va, vb, 100, 0) / (100*2);    // test
         if (t<access_time) access_time = t;
     }
     return INT2FIX(access_time);

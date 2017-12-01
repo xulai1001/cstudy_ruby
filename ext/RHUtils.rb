@@ -10,7 +10,7 @@ module RHUtils
     PAGE_SHIFT = 12
     
     # row conflict threshold (ticks)
-    @@threshold = 250
+    @@threshold = 233
     
     class Page
         def [](offset)
@@ -46,7 +46,11 @@ module RHUtils
     end
     
     def conflict?(a, b)
-        access_time(a, b) > @@threshold
+        access_time(a, b) >= @@threshold
+    end
+    
+    def threshold
+        @@threshold
     end
     
     def allocate_mb(mb, cls=Page)

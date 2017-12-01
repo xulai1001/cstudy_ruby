@@ -23,7 +23,7 @@ def latency(*bits)
 end
 
 def access(*bits)
-    genseed(*bits).map {|x| [x[0], x[1], access_time(*x)] }
+    genseed(*bits).map {|x| access_time(*x) }
 end
 
 # -- 1. allocate memory
@@ -33,24 +33,26 @@ $base = $pages[0].p
 order = 63-bit_clz($pages.size)+12
 puts "we can control the least #{order} bits of phys-addr"
 
-# -- 2. generate small seed (10) for quick measure
+# -- 2. generate very small seed (6) for quick measure
 srand
-$seed = Array.new(10) {rand(1 << order)}
+$seed = Array.new(5) {rand(1 << order)}
 
 # -- 3. measure latency
 begin
 $latency_map = {}
-(1..3).each {|m|
+$access_map = {}
+(1..2).each {|m|
     (3...order).to_a.combination(m).each {|bits|
-        $latency_map[bits] = latency(*bits) * 10
-        puts "#{bits} => #{$latency_map[bits]}"
+        $access_map[bits] = access(*bits)
+        $latency_map[bits] = $access_map[bits].count {|x| x >= RHUtils.threshold}
+        puts "#{bits} => #{$access_map[bits]} => #{$latency_map[bits]}"
     }
 }
 
 puts "---------------"
 # -- 4. generate large seed (100) for precise measure
 $seed = Array.new(100) {rand(1 << order)}
-$latency_map.keys.select {|k| $latency_map[k].between?(10, 90) }.each {|k|
+$latency_map.keys.select {|k| $latency_map[k] > 0 }.each {|k|
     $latency_map[k] = latency(*k)
     puts "#{k} => #{$latency_map[k]}"    
 }
